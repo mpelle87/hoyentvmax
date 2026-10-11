@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda Deportiva</title>
+
+  <!-- Configuración para PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Agenda">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#12151f">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --fondo: #12151f;
+      --tarjeta: #1b2030;
+      --tarjeta-hoy: #232a44;
+      --linea: #2c3350;
+      --texto: #f4f5fa;
+      --suave: #aab0c6;
+      --futbol: #3ddc97;
+      --f1: #ff5a4d;
+      --acento: #7b8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'Figtree', system-ui, sans-serif;
+      background: var(--fondo);
+      color: var(--texto);
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+    .wrap { margin: 0 auto; padding: 0 0.6rem; }
+    @media (min-width: 1100px) { .wrap { max-width: 640px; } }
+
+    header { padding: 1.2rem 0 0.4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .sub { color: var(--suave); font-size: 0.9rem; margin-top: 0.25rem; }
+    #btn-actualizar {
+      flex-shrink: 0; width: 2.9rem; height: 2.9rem; border-radius: 50%;
+      border: 1px solid var(--linea); background: var(--tarjeta); color: var(--texto);
+      display: grid; place-items: center; cursor: pointer;
+    }
+    #btn-actualizar:active { background: var(--tarjeta-hoy); }
+    #btn-actualizar svg { width: 1.3rem; height: 1.3rem; }
+    #btn-actualizar.girando svg { animation: gira 0.9s linear infinite; }
+    @keyframes gira { to { transform: rotate(360deg); } }
+
+
+    .dia {
+      font-family: 'Bricolage Grotesque', sans-serif; font-size: 1rem; font-weight: 700;
+      color: var(--suave); margin: 1.1rem 0 0.6rem; text-transform: capitalize;
+    }
+    .dia.hoy { color: var(--acento); }
+
+    .card {
+      background: var(--tarjeta); border: 1px solid var(--linea); border-left-width: 6px;
+      border-radius: 1rem; padding: 0.8rem 0.9rem 0.9rem; margin-bottom: 0.65rem;
+    }
+    .card.futbol { border-left-color: var(--futbol); }
+    .card.f1 { border-left-color: var(--f1); }
+    .card.es-hoy { background: var(--tarjeta-hoy); }
+
+    .fila-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+    .hora { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.7rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+    .comp { font-size: 0.85rem; font-weight: 600; color: var(--suave); text-align: right; line-height: 1.25; }
+
+    .equipos { margin-top: 0.7rem; text-align: center; }
+    .equipo {
+      font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 700;
+      line-height: 1.2; overflow-wrap: anywhere;
+    }
+    .vs { font-size: 0.8rem; font-weight: 700; color: var(--suave); margin: 0.2rem 0; }
+    .titulo-f1 { text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.25rem; font-weight: 700; line-height: 1.2; margin-top: 0.6rem; overflow-wrap: anywhere; }
+
+    .deporte { display: inline-block; margin-top: 0.9rem; font-size: 0.95rem; font-weight: 700; }
+    .futbol .deporte { color: var(--futbol); }
+    .f1 .deporte { color: var(--f1); }
+
+    .estado { text-align: center; padding: 4rem 1rem; color: var(--suave); font-size: 1.1rem; }
+    .spinner { width: 2rem; height: 2rem; border: 3px solid var(--linea); border-top-color: var(--acento); border-radius: 50%; animation: gira 0.9s linear infinite; margin: 0 auto 1rem; }
+    .error { background: #3a1d24; border: 1px solid #7a3340; color: #ffb4bf; border-radius: 1rem; padding: 1rem; font-size: 1rem; }
+    .oculto { display: none; }
+    footer { text-align: center; color: var(--suave); font-size: 0.9rem; margin-top: 2rem; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Agenda Deportiva</h1>
+        <p class="sub">Tus equipos y la Fórmula 1</p>
+      </div>
+      <button id="btn-actualizar" onclick="cargarDatos()" aria-label="Actualizar datos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4v5h.58m15.36 2A8 8 0 004.58 9M4.58 9H9m11 11v-5h-.58m0 0a8 8 0 01-15.36-2m15.36 2H15"/>
+        </svg>
+      </button>
+    </header>
+
+    <div id="loading" class="estado">
+      <div class="spinner"></div>
+      <p>Cargando eventos…</p>
+    </div>
+
+    <main id="lista" class="oculto"></main>
+
+    <footer>Actualizado desde Google Sheets</footer>
+  </div>
+
+  <script>
+    var datosGlobales = [];
+
+    function esc(t) {
+      return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    // Pega aquí la URL de tu web app de Apps Script (la que termina en /exec)
+    var URL_DATOS = 'https://script.google.com/macros/s/AKfycbzgcMDSPpncbkI_Moa34ufBRIkHEKWGV-KAOqHd1lXMmjVhY5XoL0n-3p9TJDyBGXHb/exec';
+
+    function mostrar(datos) {
+      datosGlobales = datos || [];
+      document.getElementById('loading').classList.add('oculto');
+      document.getElementById('lista').classList.remove('oculto');
+      renderizar(datosGlobales);
+    }
+
+    function cargarDatos() {
+      var btn = document.getElementById('btn-actualizar');
+      btn.classList.add('girando');
+      document.getElementById('loading').innerHTML = '<div class="spinner"></div><p>Cargando eventos…</p>';
+
+      // Si ya hay datos guardados, se muestran al instante mientras se actualiza
+      var guardado = null;
+      try { guardado = JSON.parse(localStorage.getItem('agenda_datos')); } catch (e) {}
+      if (guardado && guardado.length) {
+        mostrar(guardado);
+      } else {
+        document.getElementById('loading').classList.remove('oculto');
+        document.getElementById('lista').classList.add('oculto');
+      }
+
+      fetch(URL_DATOS + '?data=1')
+        .then(function (r) { return r.json(); })
+        .then(function (datos) {
+          btn.classList.remove('girando');
+          try { localStorage.setItem('agenda_datos', JSON.stringify(datos)); } catch (e) {}
+          mostrar(datos);
+        })
+        .catch(function (error) {
+          btn.classList.remove('girando');
+          if (guardado && guardado.length) return; // se queda con lo último guardado (sin conexión)
+          document.getElementById('loading').classList.remove('oculto');
+          document.getElementById('loading').innerHTML =
+            '<div class="error"><strong>No se pudieron cargar los eventos.</strong><br>' +
+            esc(error.message || error) + '</div>';
+        });
+    }
+
+    function hoyISO() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function etiquetaDia(fechaStr) {
+      var hoy = hoyISO();
+      var m = new Date(); m.setDate(m.getDate() + 1);
+      var manana = m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0') + '-' + String(m.getDate()).padStart(2, '0');
+      if (fechaStr === hoy) return 'Hoy';
+      if (fechaStr === manana) return 'Mañana';
+      if (!fechaStr || fechaStr.indexOf('-') === -1) return fechaStr;
+      var p = fechaStr.split('-');
+      var f = new Date(p[0], p[1] - 1, p[2]);
+      return f.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+    }
+
+    function renderizar(datos) {
+      var cont = document.getElementById('lista');
+      if (!datos || datos.length === 0) {
+        cont.innerHTML = '<div class="estado">📅<br>No hay eventos programados.</div>';
+        return;
+      }
+      var hoy = hoyISO();
+      var html = '';
+      var diaActual = null;
+
+      datos.forEach(function (fila) {
+        var fecha = fila[0], hora = fila[1], deporte = fila[2], evento = String(fila[3] || ''), comp = fila[4];
+        var esF1 = deporte === 'Fórmula 1';
+        var esHoy = fecha === hoy;
+
+        if (fecha !== diaActual) {
+          diaActual = fecha;
+          html += '<h2 class="dia' + (fecha === hoy ? ' hoy' : '') + '">' + esc(etiquetaDia(fecha)) + '</h2>';
+        }
+
+        var cuerpo;
+        if (!esF1 && evento.indexOf(' vs ') !== -1) {
+          var p = evento.split(' vs ');
+          var local = p[0];
+          var visita = p.slice(1).join(' vs ');
+          // Si el resultado viene al final como "(2 - 1)", se reparte: cada equipo con sus goles
+          var m = visita.match(/^(.*?)\s*\(\s*(\d+)\s*[-–]\s*(\d+)\s*\)\s*$/);
+          if (m) {
+            visita = m[1] + ' (' + m[3] + ')';
+            local = local + ' (' + m[2] + ')';
+          }
+          cuerpo = '<div class="equipos">' +
+            '<div class="equipo">' + esc(local) + '</div>' +
+            '<div class="vs">vs</div>' +
+            '<div class="equipo">' + esc(visita) + '</div></div>';
+        } else {
+          cuerpo = '<div class="titulo-f1">' + esc(evento) + '</div>';
+        }
+
+        html += '<article class="card ' + (esF1 ? 'f1' : 'futbol') + (esHoy ? ' es-hoy' : '') + '">' +
+          '<div class="fila-top"><span class="hora">' + esc(hora) + '</span>' +
+          '<span class="comp">' + (esF1 ? '🏎️ ' : '⚽ ') + esc(comp) + '</span></div>' +
+          cuerpo +
+          '</article>';
+      });
+
+      cont.innerHTML = html;
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+
+    window.onload = cargarDatos;
+  </script>
+</body>
+</html>
