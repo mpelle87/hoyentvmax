@@ -84,6 +84,7 @@
     .futbol .deporte { color: var(--futbol); }
     .f1 .deporte { color: var(--f1); }
 
+    .podio { text-align: center; margin-top: 0.6rem; font-size: 1.05rem; font-weight: 600; line-height: 1.5; }
     .estado { text-align: center; padding: 4rem 1rem; color: var(--suave); font-size: 1.1rem; }
     .spinner { width: 2rem; height: 2rem; border: 3px solid var(--linea); border-top-color: var(--acento); border-radius: 50%; animation: gira 0.9s linear infinite; margin: 0 auto 1rem; }
     .error { background: #3a1d24; border: 1px solid #7a3340; color: #ffb4bf; border-radius: 1rem; padding: 1rem; font-size: 1rem; }
@@ -220,7 +221,13 @@
             '<div class="vs">vs</div>' +
             '<div class="equipo">' + esc(visita) + '</div></div>';
         } else {
-          cuerpo = '<div class="titulo-f1">' + esc(evento) + '</div>';
+          var partesF1 = evento.split(' | ');
+          cuerpo = '<div class="titulo-f1">' + esc(partesF1[0]) + '</div>';
+          if (partesF1.length > 1) {
+            cuerpo += '<div class="podio">' + partesF1.slice(1).map(function (x) {
+              return '<div>' + esc(x) + '</div>';
+            }).join('') + '</div>';
+          }
         }
 
         html += '<article class="card ' + (esF1 ? 'f1' : 'futbol') + (esHoy ? ' es-hoy' : '') + '">' +
